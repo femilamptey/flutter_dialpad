@@ -14,9 +14,11 @@ class DialPad extends StatefulWidget {
   final Color backspaceButtonIconColor;
   final String outputMask;
   final bool enableDtmf;
+  final IconData buttonIcon;
 
   DialPad(
       {this.makeCall,
+      this.buttonIcon,
       this.outputMask,
       this.buttonColor,
       this.buttonTextColor,
@@ -128,8 +130,15 @@ class _DialPadState extends State<DialPad> {
               Expanded(
                 child: Center(
                   child: DialButton(
-                    icon: Icons.phone,
-                    color: Colors.green,
+                    icon: widget.buttonIcon != null
+                        ? widget.buttonIcon
+                        : Icons.phone,
+                    color: widget.dialButtonColor != null
+                        ? widget.dialButtonColor
+                        : Colors.green,
+                    iconColor: widget.dialButtonIconColor != null
+                        ? widget.dialButtonIconColor
+                        : Colors.white,
                     onTap: (value) {
                       widget.makeCall(_value);
                     },
