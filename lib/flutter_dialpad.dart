@@ -1,4 +1,4 @@
-library flutter_dialpad;
+library flutter_dialpad_plus;
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -6,9 +6,10 @@ import 'package:flutter_masked_text/flutter_masked_text.dart';
 import 'package:flutter_dtmf/flutter_dtmf.dart';
 
 class DialPad extends StatefulWidget {
-  final ValueSetter<String> makeCall;
-  final Color buttonColor;
-  final Color buttonTextColor;
+  final ValueSetter<String> useNumber;
+  final Color numberColor;
+  final Color keyPadColor;
+  final Color keyPadTextColor;
   final Color dialButtonColor;
   final Color dialButtonIconColor;
   final Color backspaceButtonIconColor;
@@ -17,12 +18,13 @@ class DialPad extends StatefulWidget {
   final IconData buttonIcon;
 
   DialPad(
-      {this.makeCall,
-      this.buttonIcon,
+      {@required this.buttonIcon,
+      @required this.dialButtonColor,
+      this.useNumber,
       this.outputMask,
-      this.buttonColor,
-      this.buttonTextColor,
-      this.dialButtonColor,
+      this.numberColor,
+      this.keyPadColor,
+      this.keyPadTextColor,
       this.dialButtonIconColor,
       this.backspaceButtonIconColor,
       this.enableDtmf});
@@ -53,7 +55,8 @@ class _DialPadState extends State<DialPad> {
   @override
   void initState() {
     textEditingController = MaskedTextController(
-        mask: widget.outputMask != null ? widget.outputMask : '(000) 000-0000');
+        mask:
+            widget.outputMask != null ? widget.outputMask : '(000) 00 00 000');
     super.initState();
   }
 
@@ -84,8 +87,8 @@ class _DialPadState extends State<DialPad> {
       items.add(DialButton(
         title: mainTitle[i],
         subtitle: subTitle[i],
-        color: widget.buttonColor,
-        textColor: widget.buttonTextColor,
+        color: widget.keyPadColor,
+        textColor: widget.keyPadTextColor,
         onTap: _setText,
       ));
     }
@@ -104,14 +107,19 @@ class _DialPadState extends State<DialPad> {
     var screenSize = MediaQuery.of(context).size;
     var sizeFactor = screenSize.height * 0.09852217;
 
+    // var buttonIcon;
     return Center(
       child: Column(
         children: <Widget>[
           Padding(
-            padding: EdgeInsets.all(20),
+            padding: EdgeInsets.symmetric(horizontal: 20),
             child: TextFormField(
               readOnly: true,
-              style: TextStyle(color: Colors.white, fontSize: sizeFactor / 2),
+              style: TextStyle(
+                  color: widget.numberColor != null
+                      ? widget.numberColor
+                      : Colors.white,
+                  fontSize: sizeFactor / 2),
               textAlign: TextAlign.center,
               decoration: InputDecoration(border: InputBorder.none),
               controller: textEditingController,
@@ -130,17 +138,11 @@ class _DialPadState extends State<DialPad> {
               Expanded(
                 child: Center(
                   child: DialButton(
-                    icon: widget.buttonIcon != null
-                        ? widget.buttonIcon
-                        : Icons.phone,
-                    color: widget.dialButtonColor != null
-                        ? widget.dialButtonColor
-                        : Colors.green,
-                    iconColor: widget.dialButtonIconColor != null
-                        ? widget.dialButtonIconColor
-                        : Colors.white,
+                    iconColor: widget.dialButtonIconColor,
+                    icon: widget.buttonIcon,
+                    color: widget.dialButtonColor,
                     onTap: (value) {
-                      widget.makeCall(_value);
+                      widget.useNumber(_value);
                     },
                   ),
                 ),
@@ -149,26 +151,39 @@ class _DialPadState extends State<DialPad> {
                 child: Padding(
                   padding:
                       EdgeInsets.only(right: screenSize.height * 0.03685504),
-                  child: IconButton(
-                    icon: Icon(
-                      Icons.backspace,
-                      size: sizeFactor / 2,
-                      color: _value.length > 0
-                          ? (widget.backspaceButtonIconColor != null
-                              ? widget.backspaceButtonIconColor
-                              : Colors.white24)
-                          : Colors.white24,
+                  child: GestureDetector(
+                    onLongPress: () {
+                      print('Backspace longpressed');
+                      if (_value != null && _value.length > 0) {
+                        setState(() {
+                          _value = _value.substring(
+                              0, _value.length - _value.length);
+                          textEditingController.text = _value;
+                        });
+                      }
+                    },
+                    child: IconButton(
+                      icon: Icon(
+                        Icons.backspace,
+                        size: sizeFactor / 2,
+                        color: _value.length > 0
+                            ? (widget.backspaceButtonIconColor != null
+                                ? widget.backspaceButtonIconColor
+                                : Colors.white24)
+                            : Colors.white24,
+                      ),
+                      onPressed: _value.length == 0
+                          ? null
+                          : () {
+                              if (_value != null && _value.length > 0) {
+                                setState(() {
+                                  _value =
+                                      _value.substring(0, _value.length - 1);
+                                  textEditingController.text = _value;
+                                });
+                              }
+                            },
                     ),
-                    onPressed: _value.length == 0
-                        ? null
-                        : () {
-                            if (_value != null && _value.length > 0) {
-                              setState(() {
-                                _value = _value.substring(0, _value.length - 1);
-                                textEditingController.text = _value;
-                              });
-                            }
-                          },
                   ),
                 ),
               )
@@ -190,6 +205,7 @@ class DialButton extends StatefulWidget {
   final Color iconColor;
   final ValueSetter<String> onTap;
   final bool shouldAnimate;
+
   DialButton(
       {this.key,
       this.title,
@@ -235,6 +251,10 @@ class _DialButtonState extends State<DialButton>
     var sizeFactor = screenSize.height * 0.09852217;
 
     return GestureDetector(
+//      onLongPress: () {
+//        print('Long Pressed');
+//        if (this.widget.onTap != null) this.widget.onTap("+");
+//      },
       onTap: () {
         if (this.widget.onTap != null) this.widget.onTap(widget.title);
 
@@ -294,7 +314,10 @@ class _DialButtonState extends State<DialButton>
                                               : Colors.white),
                                     ))
                             : Icon(widget.icon,
-                                size: sizeFactor / 2, color: widget.iconColor != null ? widget.iconColor : Colors.white)),
+                                size: sizeFactor / 2,
+                                color: widget.iconColor != null
+                                    ? widget.iconColor
+                                    : Colors.white)),
                   ))),
     );
   }
